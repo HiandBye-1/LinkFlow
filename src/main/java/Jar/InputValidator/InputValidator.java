@@ -37,4 +37,16 @@ public class InputValidator {
 
         return true;
     }
+
+    public boolean isValidEmail(String email) {
+        if (email == null || email.isBlank()) {
+            return false;
+        }
+        email = email.trim();
+        if (email.length() > 254) {
+            return false;
+        }
+        String emailRegex = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$";
+        return email.matches(emailRegex);
+    }
 }

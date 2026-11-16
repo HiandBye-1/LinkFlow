@@ -8,7 +8,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapsId;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity 
 @Table(name = "temp_emails")
@@ -23,10 +23,10 @@ public class TempEmails {
     private String email;
 
     @Id 
-    private Long userId;
+    private int userId;
 
     @Column(name = "expires", nullable = false)
-    private LocalDateTime expires;
+    private Instant expires;
 
     @Column(name = "attempts", nullable = false)
     private int attempts = 0;
@@ -43,7 +43,7 @@ public class TempEmails {
         return email;
     }
 
-    public LocalDateTime getExpires() {
+    public Instant getExpires() {
         return expires;
     }
 
@@ -55,7 +55,7 @@ public class TempEmails {
         return codeHashed;
     }
 
-    public void setExpires(LocalDateTime expires) {
+    public void setExpires(Instant expires) {
         this.expires = expires;
     }
 
@@ -63,7 +63,7 @@ public class TempEmails {
         this.attempts = attempts;
     }
 
-    public Long getUserId() {
+    public int getUserId() {
         return userId;
     }
 

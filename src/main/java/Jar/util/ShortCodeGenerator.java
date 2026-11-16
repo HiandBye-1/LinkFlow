@@ -23,4 +23,20 @@ public class ShortCodeGenerator {
         return sb.toString();
     }
 
+    public String SecureRandomNumbers(int length){
+        if (length < 1) throw new IllegalArgumentException("Length must be greater than 0");
+
+        String number = "0123456789";
+        StringBuilder sb = new StringBuilder();
+
+        int randomIndex;
+        for(int i = 0; i < length; i++){
+            randomIndex = random.nextInt(number.length());
+            sb.append(number.charAt(randomIndex));
+        }
+
+        return sb.toString();
+
+    }
+
 }
