@@ -17,6 +17,7 @@ import Jar.InputValidator.InputValidator;
 import Jar.entities.TempEmails;
 import Jar.util.ShortCodeGenerator;
 
+
 @Service
 public class EmailVertificationService {
     private final NormalUserRepository normalUserRepository;
@@ -56,10 +57,13 @@ public class EmailVertificationService {
         NormalUser user = normalUserRepository.findByUsername(context.getName()).orElseThrow(() -> new NotLogin("User not found"));//just in case user account got delete somehow during this process.
         String otp = shortCodeGenerator.SecureRandomNumbers(6);//generate a short code
 
-
-        TempEmails tempEmail = new TempEmails();//create a new temp email object
-        tempEmail.setExpires(expires);
+                                //there is                                                                           //there is not
+        TempEmails tempEmail = tempEmailRepository.findById(user.getId()).orElseGet(() -> {TempEmails tempEmails = new TempEmails();
+                                                                                           tempEmails.setUser(user);
+                                                                                           return tempEmails;});
+        
         tempEmail.setUser(user);
+        tempEmail.setExpires(expires);
         tempEmail.setEmail(email);
         tempEmail.setCodeHashed(passwordEncoder.encode(otp));//generate a short code
         tempEmail.setAttempts(0);

@@ -38,6 +38,11 @@ public class NormalUser {
     public void setOtp(String otp) {
         this.otp = otp;
     }
+
+    public int getId() {
+        return id;
+    }
+
     
 
 }
