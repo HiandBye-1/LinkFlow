@@ -1,16 +1,15 @@
 # LinkFlow — Link Management & Analytics Platform
 
-LinkFlow is a Java Spring Boot application for creating, managing, and tracking shortened URLs. It is being developed as a secure, deployable platform with user, employee, administrator, and developer-facing functionality.
+LinkFlow is a Java Spring Boot application for creating, managing, and tracking shortened URLs, with user, employee, administrator, and developer-facing functionality.
 
 ## Current Features
 
-- **Authentication:** User registration, BCrypt password hashing, Spring Security authentication, session management, and CSRF protection.
-- **Authorization:** Role-based access control for protected endpoints.
-- **URL Shortening:** Generate unique short codes, associate links with their owners, store mappings in MySQL, and redirect visitors.
+- **Authentication:** Registration, BCrypt password hashing, Spring Security, sessions, and CSRF protection.
+- **Authorization:** Role-based access control.
+- **URL Shortening:** Unique short codes, link ownership, MySQL storage, and redirects.
 - **HTTPS:** TLS support for local development.
-- **Docker:** Multi-stage application image, Docker Compose, MySQL container, and persistent database storage.
-
-Email verification and MFA are currently under development.
+- **Docker:** Multi-stage builds, Docker Compose, MySQL, and persistent storage.
+- **Email:** SMTP integration tested; email verification is under development.
 
 ## Technology Stack
 
@@ -18,13 +17,14 @@ Email verification and MFA are currently under development.
 |---|---|
 | Java 23 | Backend |
 | Spring Boot 4 | Application framework |
-| Spring Security 7 | Authentication and authorization |
-| Spring Data JPA / Hibernate | Database persistence |
+| Spring Security 7 | Security |
+| Spring Data JPA / Hibernate | Persistence |
 | MySQL 8 | Database |
-| Maven | Build and dependencies |
+| Maven | Build |
 | Docker / Compose | Containerization |
+| Spring Mail | Email delivery |
 | Postman | API testing |
-| JavaScript | Planned frontend integration |
+| JavaScript | Planned frontend |
 
 ## Getting Started
 
@@ -33,8 +33,6 @@ Email verification and MFA are currently under development.
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
 - [Git](https://git-scm.com/)
 - [Postman](https://www.postman.com/) (optional)
-
-Java, Maven, and MySQL do not need to be installed separately to run the Dockerized application.
 
 ### 1. Clone the repository
 
@@ -45,26 +43,42 @@ cd LinkFlow
 
 ### 2. Configure environment variables
 
-Create a `.env` file in the project root, alongside `compose.yaml` and `Dockerfile`:
+Create a `.env` file in the project root:
 
 ```dotenv
 DB_USERNAME=appuser
 DB_PASSWORD=change_me
 DB_ROOT_PASSWORD=change_me
 KEYSTORE_PASSWORD=change_me
+
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USERNAME=your-email@gmail.com
+SMTP_PASSWORD=your-app-password
 ```
 
-Replace the example values with your own credentials. Never commit `.env` or real credentials to Git.
+Replace the example values with your own. Never commit `.env` or real credentials.
 
-### 3. Create the HTTPS certificate
+### 3. Configure Gmail SMTP (optional)
 
-Create a `certs` directory:
+To enable application emails:
+
+1. Enable Google two-step verification.
+2. Generate a [Google App Password](https://myaccount.google.com/apppasswords).
+3. Set your Gmail address as `SMTP_USERNAME`.
+4. Set the generated App Password as `SMTP_PASSWORD`.
+
+LinkFlow uses this SMTP account to send emails to users. Users do not need their own SMTP configuration.
+
+### 4. Create the HTTPS certificate
+
+Create the certificate directory:
 
 ```bash
 mkdir certs
 ```
 
-Generate a local development keystore using Java's `keytool`:
+Generate a local development certificate:
 
 ```cmd
 keytool -genkeypair ^
@@ -78,37 +92,23 @@ keytool -genkeypair ^
   -ext "SAN=dns:localhost,ip:127.0.0.1"
 ```
 
-Use the same password configured in `KEYSTORE_PASSWORD`.
+Use the same password as `KEYSTORE_PASSWORD`. The self-signed certificate may trigger browser warnings during local development.
 
-This creates a self-signed certificate. Browsers and API clients may warn that it is not trusted; this is expected for local development.
+### 5. Start LinkFlow
 
-### 4. Start LinkFlow
-
-Make sure Docker Desktop is running, then execute:
+Make sure Docker Desktop is running:
 
 ```bash
 docker compose up --build
 ```
 
-The application will be available at:
+Application: `https://localhost:8443`
 
-```text
-https://localhost:8443
-```
-
-Docker Compose builds the application, starts MySQL, initializes a fresh database, and starts Spring Boot.
-
-**Important:** `DB.sql` is executed when MySQL initializes an empty data directory. Existing database volumes are preserved between restarts.
+MySQL initializes `DB.sql` when its data directory is empty. Existing database volumes are preserved between restarts.
 
 ## API Usage
 
-All examples use:
-
-```text
-https://localhost:8443
-```
-
-CSRF protection is enabled, including for public POST requests. First retrieve a CSRF token:
+CSRF protection applies to POST requests. First retrieve a token:
 
 ```http
 GET /csrf
@@ -118,20 +118,16 @@ Keep the session cookie and send the returned token in the `X-CSRF-TOKEN` header
 
 | Method | Endpoint | Access | Purpose |
 |---|---|---|---|
-| POST | `/user/register` | Public | Register an account |
+| POST | `/user/register` | Public | Register |
 | POST | `/user/login` | Public | Log in |
 | GET | `/csrf` | Public | Retrieve CSRF token |
 | GET | `/user/profile` | Authenticated | View profile |
-| POST | `/url/shorten` | NORMALUSER | Create a short link |
-| GET | `/r/{urlCode}` | Public | Redirect to original URL |
+| POST | `/url/shorten` | NORMALUSER | Create short link |
+| GET | `/r/{urlCode}` | Public | Redirect |
 
 ### Register
 
-```http
-POST /user/register
-```
-
-Example JSON body:
+`POST /user/register`
 
 ```json
 {
@@ -141,29 +137,9 @@ Example JSON body:
 }
 ```
 
-### Log in
-
-```http
-POST /user/login
-```
-
-Submit the account credentials and retain the returned session cookie.
-
-### View profile
-
-```http
-GET /user/profile
-```
-
-Requires an authenticated session.
-
 ### Create a short link
 
-```http
-POST /url/shorten
-```
-
-Example JSON body:
+`POST /url/shorten`
 
 ```json
 {
@@ -171,15 +147,18 @@ Example JSON body:
 }
 ```
 
-Requires an authenticated user with the `NORMALUSER` role.
+### Email verification (in development)
 
-### Follow a short link
+The planned workflow:
 
-```http
-GET /r/{urlCode}
-```
+1. Authenticated user submits an email address.
+2. LinkFlow generates a six-digit code.
+3. The code is hashed and temporarily stored in MySQL.
+4. SMTP sends the code to the submitted address.
+5. The user submits the code for verification.
+6. On success, the email is saved to the account.
 
-Redirects the visitor to the original URL.
+Verification codes expire after five minutes.
 
 ## Useful Docker Commands
 
@@ -188,41 +167,29 @@ Redirects the visitor to the original URL.
 | `docker compose up` | Start containers |
 | `docker compose up --build` | Build and start |
 | `docker compose down` | Stop and remove containers |
-| `docker compose stop` | Stop containers |
-| `docker compose start` | Restart stopped containers |
 | `docker compose logs app` | View application logs |
 | `docker compose logs database` | View database logs |
 | `docker compose ps` | Check container status |
 
-MySQL data is stored in a named Docker volume. `docker compose down` preserves it.
-
-To completely reset the development database:
-
-```bash
-docker compose down -v
-```
-
-**Warning:** This deletes the database volume and all stored data. Use it only when you intend to reset the database.
+**Warning:** `docker compose down -v` deletes named volumes, including stored database data.
 
 ## Project Architecture
 
-LinkFlow follows a layered architecture:
+LinkFlow uses a layered architecture:
 
-- **Controller:** Handles HTTP requests and responses.
-- **Service:** Contains business logic.
-- **Repository:** Handles database operations.
-- **Entity:** Represents persisted database records.
-- **DTO:** Defines API request and response structures.
-- **Security:** Handles authentication and authorization.
-- **Exception:** Centralizes application error handling.
+- **Controller:** HTTP requests and responses.
+- **Service:** Business logic.
+- **Repository:** Database operations.
+- **Entity:** Database records.
+- **DTO:** API request and response structures.
+- **Security:** Authentication and authorization.
+- **Exception:** Centralized error handling.
 
-The intended architecture is a **modular monolith**: one deployable application organized into separate functional areas.
+The intended design is a **modular monolith**.
 
 ## Roadmap
 
-Planned development includes:
-
-- Email verification and multi-factor authentication.
+- Complete email verification and add MFA.
 - Link management, campaigns, and click analytics.
 - User, employee/support, and administrator portals.
 - Developer APIs, API keys, and rate limiting.
@@ -232,11 +199,10 @@ Planned development includes:
 
 ## Development Approach
 
-The project prioritizes backend functionality, security, correctness, maintainability, and testing. New technologies will be introduced when they solve a practical engineering problem rather than simply to expand the technology stack.
-
-JavaScript interfaces will be developed incrementally alongside stable backend APIs.
+The project prioritizes backend functionality, security, correctness, maintainability, and testing. New technologies will be introduced when they solve practical engineering problems.
 
 ---
 
 **LinkFlow — Build, Manage, and Understand Your Links.**
-Thank you for your interest in the project! >:)
+
+TY for your interest in the project >:);

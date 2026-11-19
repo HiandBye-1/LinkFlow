@@ -4,7 +4,6 @@ import org.springframework.http.HttpStatus;
 import jakarta.servlet.http.*;
 
 import Jar.service.NormalUserService;
-import Jar.entities.NormalUser;
 import Jar.dto.LoginRequest;
 import Jar.dto.UserProfileResponse;
 import Jar.service.AuthenticationService;

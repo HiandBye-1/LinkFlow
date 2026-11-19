@@ -12,16 +12,22 @@ import Jar.service.EmailVertificationService;
 @RestController 
 public class EmailController {
     private final EmailVertificationService emailVerificationService;
-    
+
     public EmailController(EmailVertificationService emailVerificationService) {
         this.emailVerificationService = emailVerificationService;
-        
+
     }
 
     @PostMapping("/user/email/verify-request")
     @ResponseStatus(HttpStatus.OK)
     public void requestEmailVerification(@RequestBody EmailVerificationRequest request) {
         emailVerificationService.requestEmailVerification(request.getEmail());
+    }
+
+    @PostMapping("/user/email/verify")
+    @ResponseStatus(HttpStatus.OK)
+    public void verifyEmail(@RequestBody String code) {
+        emailVerificationService.verifyEmail(code);
     }
 
 

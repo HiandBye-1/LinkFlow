@@ -2,3 +2,7 @@ DB_USERNAME=[your database username]
 DB_PASSWORD=[your database password]
 KEYSTORE_PASSWORD=[your password when you created the tls keys]
 DB_ROOT_PASSWORD=[any password you want]
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USERNAME=your-email@gmail.com
+SMTP_PASSWORD=your-app-password
