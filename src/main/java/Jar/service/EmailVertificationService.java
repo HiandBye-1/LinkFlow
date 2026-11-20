@@ -11,13 +11,20 @@ import Jar.repository.TempEmailRepository;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import Jar.exception.NotLogin;
+import Jar.exception.*;
 import Jar.entities.NormalUser;
 import Jar.InputValidator.InputValidator;
 import Jar.entities.TempEmails;
 import Jar.util.ShortCodeGenerator;
+
+
+import org.springframework.transaction.annotation.Transactional;
+
 import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
+
+
+
 
 
 @Service
@@ -44,6 +51,7 @@ public class EmailVertificationService {
         this.javaMailSender = javaMailSender;
     }
 
+    @Transactional 
     public void requestEmailVerification(String email){
         //check email is valid first 
         if(!validator.isValidEmail(email)){
@@ -58,11 +66,11 @@ public class EmailVertificationService {
         email = email.trim();//remove uneccssary spaces.
 
         Instant expires = Instant.now().plusSeconds(300);
-        NormalUser user = normalUserRepository.findByUsername(context.getName()).orElseThrow(() -> new NotLogin("User not found"));//just in case user account got delete somehow during this process.
+        NormalUser user = normalUserRepository.findByUsernameWithLock(context.getName()).orElseThrow(() -> new NotLogin("User not found"));//just in case user account got delete somehow during this process.
         String otp = shortCodeGenerator.SecureRandomNumbers(6);//generate a short code
 
                                 //there is                                                                           //there is not
-        TempEmails tempEmail = tempEmailRepository.findById(user.getId()).orElseGet(() -> {TempEmails tempEmails = new TempEmails();
+        TempEmails tempEmail = tempEmailRepository.findByUserIdWithLock(user.getId()).orElseGet(() -> {TempEmails tempEmails = new TempEmails();
                                                                                            tempEmails.setUser(user);
                                                                                            return tempEmails;});
         
@@ -89,26 +97,48 @@ public class EmailVertificationService {
         
     }
 
+
+    @Transactional(noRollbackFor = { ExceedAttemptsLimitException.class, WrongShortCodeException.class})
     public void verifyEmail(String code){
+        
+        if(code == null || code.isEmpty() || code.length() != 6){
+            throw new IllegalArgumentException("Invalid code");
+        }
+
+        
         //verify first 
         Authentication context = SecurityContextHolder.getContext().getAuthentication();
         if(context == null || !context.isAuthenticated() || context instanceof AnonymousAuthenticationToken){
             throw new NotLogin("User not logged in");
         }
+        
+        for(int i = 0; i < 6; i++){
+            if(!Character.isDigit(code.charAt(i))){
+                throw new IllegalArgumentException("Invalid code");
+            }
+        }
 
-        NormalUser user = normalUserRepository.findByUsername(context.getName()).orElseThrow(() -> new NotLogin("User not found"));//just in case user account got delete somehow during this process.
-        TempEmails tempEmail = tempEmailRepository.findById(user.getId()).orElseThrow(() -> new NotLogin("User not found"));//just in case user account got delete somehow during this process.
+        NormalUser user = normalUserRepository.findByUsernameWithLock(context.getName()).orElseThrow(() -> new NotLogin("User not found"));//just in case user account got delete somehow during this process.
+        TempEmails tempEmail = tempEmailRepository.findByUserIdWithLock(user.getId()).orElseThrow(() -> new NotLogin("User not found"));//just in case user account got delete somehow during this process.
         
         //different cases
-        if(tempEmail.getExpires().isBefore(Instant.now()) ){//if expired
-
+        if(!Instant.now().isBefore(tempEmail.getExpires())){//if expired
+            throw new CodeExpiredException("Code expired");
         }else if(tempEmail.getAttempts() >= 5){//if too many attempts
-
+            tempEmailRepository.delete(tempEmail);//delete
+            throw new ExceedAttemptsLimitException("Too many attempts, please request a new code");
         }else if(!passwordEncoder.matches(code, tempEmail.getCodeHashed())){//if wrong code
-
+            
+            tempEmail.setAttempts(tempEmail.getAttempts()+1);
+            tempEmailRepository.save(tempEmail);//save
+            throw new WrongShortCodeException("Wrong code entered");
         }
 
         //if code is right
+        user.setEmail(tempEmail.getEmail());
+        normalUserRepository.save(user);
+        tempEmailRepository.delete(tempEmail);//delete
+
     }
     
 

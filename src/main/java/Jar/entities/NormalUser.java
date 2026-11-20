@@ -19,7 +19,16 @@ public class NormalUser {
     @Column(name = "one_time_pass")
     private String otp;
 
+    @Column(name = "email")
+    private String email;
 
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
     public String getUsername() {
         return username;
     }
