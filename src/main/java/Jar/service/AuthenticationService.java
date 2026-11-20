@@ -40,7 +40,8 @@ public class AuthenticationService {//everything that have context holder
             List<String> roles = new ArrayList<>();
             //iterate through the user's roles
             for(GrantedAuthority authority : authentication.getAuthorities()){
-                roles.add(authority.getAuthority());
+                if(!authority.getAuthority().equals("FACTOR_PASSWORD"))
+                 roles.add(authority.getAuthority());
             }
 
             UserProfileResponse user = new UserProfileResponse(authentication.getName(), roles );//create a new user object

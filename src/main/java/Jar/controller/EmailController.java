@@ -5,9 +5,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-
 import Jar.dto.EmailVerificationRequest;
 import Jar.service.EmailVertificationService;
+import Jar.dto.OTPCodeResponse;
 
 @RestController 
 public class EmailController {
@@ -26,8 +26,8 @@ public class EmailController {
 
     @PostMapping("/user/email/verify")
     @ResponseStatus(HttpStatus.OK)
-    public void verifyEmail(@RequestBody String code) {
-        emailVerificationService.verifyEmail(code);
+    public void verifyEmail(@RequestBody  OTPCodeResponse request) {
+        emailVerificationService.verifyEmail(request.getCode());
     }
 
 

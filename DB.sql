@@ -1,6 +1,7 @@
 
  use Ldata;
 
+drop table if exists click_events;
 drop table if exists temp_emails;
 drop table if exists url_shortener;
 drop table if exists employees;
@@ -36,5 +37,21 @@ drop table if exists users;
 	foreign key(user_id) references users(user_id) 
  );
 
+ CREATE TABLE click_events (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    short_url VARCHAR(9) NOT NULL,
+    clicked_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    referrer VARCHAR(2048) NULL,
+    user_agent VARCHAR(512) NULL,
+
+    PRIMARY KEY (id),
+
+    INDEX idx_click_events_short_url_clicked_at
+        (short_url, clicked_at),
+
+    CONSTRAINT fk_click_events_url
+        FOREIGN KEY (short_url)
+        REFERENCES url_shortener(short_url)
+) ENGINE=InnoDB;
 
 

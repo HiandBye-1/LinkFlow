@@ -119,7 +119,7 @@ public class EmailVertificationService {
         }
 
         NormalUser user = normalUserRepository.findByUsernameWithLock(context.getName()).orElseThrow(() -> new NotLogin("User not found"));//just in case user account got delete somehow during this process.
-        TempEmails tempEmail = tempEmailRepository.findByUserIdWithLock(user.getId()).orElseThrow(() -> new NotLogin("User not found"));//just in case user account got delete somehow during this process.
+        TempEmails tempEmail = tempEmailRepository.findByUserIdWithLock(user.getId()).orElseThrow(() -> new NotLogin("User not found or code expired"));//just in case user account got delete somehow during this process.
         
         //different cases
         if(!Instant.now().isBefore(tempEmail.getExpires())){//if expired
