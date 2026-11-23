@@ -13,6 +13,12 @@ services:
             - mynetwork
         ports:
             - "3307:3306"
+        healthcheck:
+            test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+            interval: 5s
+            timeout: 3s
+            retries: 10
+            start_period: 20s
     app:
         build: .
         environment:
@@ -24,6 +30,7 @@ services:
             SMTP_PORT: ${SMTP_PORT}
             SMTP_USERNAME: ${SMTP_USERNAME}
             SMTP_PASSWORD: ${SMTP_PASSWORD}
+            DB_HOST: database
         networks:
             - mynetwork
         container_name: app
@@ -33,7 +40,7 @@ services:
             - "./certs:/app/certs:ro"
         depends_on:
             database:
-                condition: service_started
+                condition: service_healthy
             redis:
                 condition: service_healthy
     
