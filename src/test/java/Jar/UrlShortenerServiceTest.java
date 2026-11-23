@@ -1,6 +1,6 @@
 package Jar;
-import Jar.service.UrlShortenerService;
-
+import Jar.url.service.UrlShortenerService;
+import Jar.url.dto.UrlMappingResponse;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -10,11 +10,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.Mock;
 import org.mockito.InjectMocks;
-import Jar.repository.NormalUserRepository;
+import Jar.auth.repository.NormalUserRepository;
 import Jar.util.ShortCodeGenerator;
 import Jar.InputValidator.InputValidator;
-import Jar.repository.UrlMappingRepository;
-import Jar.entities.NormalUser;
+import Jar.url.repository.UrlMappingRepository;
+import Jar.auth.entities.NormalUser;
 import java.util.Optional;
 
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -25,14 +25,14 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.Collections;
-import Jar.entities.UrlMapping;
+import Jar.url.entities.UrlMapping;
 import static org.mockito.ArgumentMatchers.any;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.AfterEach;
-import Jar.dto.*;
+
 
 @ExtendWith(MockitoExtension.class)
 public class UrlShortenerServiceTest {

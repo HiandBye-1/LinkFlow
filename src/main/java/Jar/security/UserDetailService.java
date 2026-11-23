@@ -1,7 +1,7 @@
 package Jar.security;
 import org.springframework.stereotype.Service;
-import Jar.entities.NormalUser;
-import Jar.repository.NormalUserRepository;
+import Jar.auth.entities.NormalUser;
+import Jar.auth.repository.NormalUserRepository;
 import org.springframework.security.core.userdetails.*;
 
 @Service
