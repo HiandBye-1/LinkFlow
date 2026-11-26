@@ -1,112 +1,175 @@
+
 package Jar;
-import Jar.url.service.UrlShortenerService;
-import Jar.url.dto.UrlMappingResponse;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.Mock;
-import org.mockito.InjectMocks;
-import Jar.auth.repository.NormalUserRepository;
-import Jar.util.ShortCodeGenerator;
 import Jar.InputValidator.InputValidator;
-import Jar.url.repository.UrlMappingRepository;
 import Jar.auth.entities.NormalUser;
-import java.util.Optional;
-
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.test.util.ReflectionTestUtils;
+import Jar.auth.repository.NormalUserRepository;
+import Jar.exception.ShortCodeNotFoundException;
+import Jar.url.dto.UrlMappingResponse;
+import Jar.url.entities.UrlMapping;
+import Jar.url.repository.UrlMappingRepository;
+import Jar.url.service.UrlShortenerService;
+import Jar.util.ShortCodeGenerator;
 
 import java.util.Collections;
-import Jar.url.entities.UrlMapping;
-import static org.mockito.ArgumentMatchers.any;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import java.util.Optional;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.test.util.ReflectionTestUtils;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class UrlShortenerServiceTest {
-    //test this class
-    @InjectMocks private UrlShortenerService urlShortenerService;
+class UrlShortenerServiceTest {
 
-    @Mock private ShortCodeGenerator shortCodeGenerator;
+    @InjectMocks
+    private UrlShortenerService urlShortenerService;
 
-    @Mock private NormalUserRepository normalUserRepository;
+    @Mock
+    private ShortCodeGenerator shortCodeGenerator;
 
-    @Mock private InputValidator inputValidator;
+    @Mock
+    private NormalUserRepository normalUserRepository;
 
-    @Mock private UrlMappingRepository urlMappingRepository;
+    @Mock
+    private InputValidator inputValidator;
 
-    @Value("${app.base-url}")
-    private String baseUrl;
-    
+    @Mock
+    private UrlMappingRepository urlMappingRepository;
 
-    @Test 
-    void createMappingTest() {
-        String baseUrl = "https://localhost:8443/r/";
-        NormalUser normalUser = new NormalUser();
-        
-        SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_NORMALUSER");//add role
-        User principal = new User("username", "password", Collections.singletonList(authority));
-        UsernamePasswordAuthenticationToken authentication = 
-            new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities());
-        SecurityContextHolder.getContext().setAuthentication(authentication);
+    private NormalUser normalUser;
 
+    @BeforeEach
+    void setUp() {
+        ReflectionTestUtils.setField(
+            urlShortenerService,
+            "baseUrl",
+            "https://localhost:8443/r/"
+        );
+
+        normalUser = new NormalUser();
         normalUser.setUsername("username");
         normalUser.setPassword("password");
 
-        when(inputValidator.linkIsValid("http://example.com")).thenReturn(true);
-        when(shortCodeGenerator.generateShortCode(6)).thenReturn("123456");
-        when(normalUserRepository.findByUsername("username")).thenReturn(Optional.of(normalUser));
+        User principal = new User(
+            "username",
+            "password",
+            Collections.singletonList(
+                new SimpleGrantedAuthority("ROLE_NORMALUSER")
+            )
+        );
 
-        //invocation use save and flush method's argument, any = accept any argument as long as it's this class
-        when(urlMappingRepository.saveAndFlush(any(UrlMapping.class))).thenAnswer(invocation ->invocation.getArgument(0));
+        UsernamePasswordAuthenticationToken authentication =
+            new UsernamePasswordAuthenticationToken(
+                principal,
+                null,
+                principal.getAuthorities()
+            );
 
-        ReflectionTestUtils.setField(urlShortenerService, "baseUrl", baseUrl);
-        UrlMappingResponse urlMapping = urlShortenerService.createMapping("http://example.com");
-
-
-        assertEquals("https://localhost:8443/r/123456", urlMapping.getShortUrl());
-        assertEquals("http://example.com", urlMapping.getLongUrl());
-
-    } 
-
-    @Test 
-    void InvalidLongUrl(){
-
-
-        when(inputValidator.linkIsValid("awd")).thenReturn(false);
-        assertThrows(IllegalArgumentException.class, () -> urlShortenerService.createMapping("awd"));
-        verify(shortCodeGenerator, never()).generateShortCode(6);
+        SecurityContextHolder.getContext().setAuthentication(authentication);
     }
 
     @Test
-    void returnUrl() {
-        UrlMapping urlMapping = new UrlMapping();
+    void createMappingShouldReturnShortUrl() {
+        when(inputValidator.linkIsValid("https://example.com"))
+            .thenReturn(true);
 
-        urlMapping.setShortUrl("123456");
-        urlMapping.setLongUrl("https://example.com");
+        when(normalUserRepository.findByUsername("username"))
+            .thenReturn(Optional.of(normalUser));
+
+        when(shortCodeGenerator.generateShortCode(6))
+            .thenReturn("123456");
+
+        when(urlMappingRepository.saveAndFlush(any(UrlMapping.class)))
+            .thenAnswer(invocation -> invocation.getArgument(0));
+
+        UrlMappingResponse response =
+            urlShortenerService.createMapping("https://example.com");
+
+        assertEquals("https://example.com", response.getLongUrl());
+        assertEquals(
+            "https://localhost:8443/r/123456",
+            response.getShortUrl()
+        );
+
+        verify(urlMappingRepository, times(1))
+            .saveAndFlush(any(UrlMapping.class));
+    }
+
+    @Test
+    void invalidLongUrlShouldThrowException() {
+        when(inputValidator.linkIsValid("invalid"))
+            .thenReturn(false);
+
+        assertThrows(
+            IllegalArgumentException.class,
+            () -> urlShortenerService.createMapping("invalid")
+        );
+
+        verify(shortCodeGenerator, never()).generateShortCode(6);
+        verify(urlMappingRepository, never())
+            .saveAndFlush(any(UrlMapping.class));
+    }
+
+    @Test
+    void missingUserShouldThrowException() {
+        when(inputValidator.linkIsValid("https://example.com"))
+            .thenReturn(true);
+
+        when(normalUserRepository.findByUsername("username"))
+            .thenReturn(Optional.empty());
+
+        assertThrows(
+            IllegalStateException.class,
+            () -> urlShortenerService.createMapping("https://example.com")
+        );
+
+        verify(shortCodeGenerator, never()).generateShortCode(6);
+        verify(urlMappingRepository, never())
+            .saveAndFlush(any(UrlMapping.class));
+    }
+
+    @Test
+    void redirectShouldReturnLongUrl() {
+        UrlMapping mapping = new UrlMapping();
+        mapping.setShortUrl("123456");
+        mapping.setLongUrl("https://example.com");
 
         when(urlMappingRepository.findByShortUrl("123456"))
-                .thenReturn(Optional.of(urlMapping));
+            .thenReturn(Optional.of(mapping));
 
         String result = urlShortenerService.redirect("123456");
 
         assertEquals("https://example.com", result);
     }
 
+    @Test
+    void nonexistentShortCodeShouldThrowException() {
+        when(urlMappingRepository.findByShortUrl("unknown"))
+            .thenReturn(Optional.empty());
+
+        assertThrows(
+            ShortCodeNotFoundException.class,
+            () -> urlShortenerService.redirect("unknown")
+        );
+    }
+
     @AfterEach
     void clearSecurityContext() {
         SecurityContextHolder.clearContext();
-}
+    }
 }

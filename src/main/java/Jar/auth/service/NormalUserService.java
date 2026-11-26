@@ -22,6 +22,7 @@ public class NormalUserService {
         this.validator = validator;
     }
 
+
     public NormalUser register(String username, String password, String reenteredPassword){//for registering users
         if(!validator.usernameIsValid(username)) throw new IllegalArgumentException("Invalid username");
         if(!validator.passwordIsValid(password)) throw new IllegalArgumentException("Invalid password");
