@@ -73,5 +73,4 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.SERVICE_UNAVAILABLE)
                 .body("Verification is temporarily busy. Please try again.");
     }
-
 }

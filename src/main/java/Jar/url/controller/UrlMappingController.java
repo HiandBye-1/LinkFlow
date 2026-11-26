@@ -8,19 +8,23 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RestController;
 import Jar.url.dto.CreateUrlRequest;
 import Jar.url.service.UrlShortenerService;
+import Jar.analytics.service.ClickTrackingService;
 import Jar.url.dto.UrlMappingResponse;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.http.ResponseEntity;
 import java.net.URI;
+import jakarta.servlet.http.HttpServletRequest;
 
 
 @RestController
 public class UrlMappingController {
     private final UrlShortenerService urlShortenerService;
+    private final ClickTrackingService clickTrackingService;
 
-    public UrlMappingController(UrlShortenerService urlShortenerService) {
+    public UrlMappingController(UrlShortenerService urlShortenerService, ClickTrackingService clickTrackingService) {
         this.urlShortenerService = urlShortenerService;
+        this.clickTrackingService = clickTrackingService;
     }
 
     @PostMapping("/url/shorten")
@@ -31,7 +35,9 @@ public class UrlMappingController {
     }
 
     @GetMapping("/r/{urlCode}")
-    public ResponseEntity<Void> redirect(@PathVariable String urlCode) {
-        return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(urlShortenerService.redirect(urlCode))).build();
+    public ResponseEntity<Void> redirect(@PathVariable String urlCode, HttpServletRequest request) {
+        String longUrl = urlShortenerService.redirect(urlCode);
+        clickTrackingService.trackClick(urlCode, request.getRemoteAddr(), request.getHeader("User-Agent"), request.getHeader("Referer"));
+        return ResponseEntity.status(HttpStatus.FOUND).location(URI.create(longUrl)).build();
     }
 }

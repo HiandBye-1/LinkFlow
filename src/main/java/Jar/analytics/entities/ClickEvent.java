@@ -7,8 +7,10 @@ import java.time.Instant;
 import jakarta.persistence.Column;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
+import jakarta.persistence.Table;
 
 @Entity 
+@Table(name = "click_events")
 public class ClickEvent {
     @Id 
     @Column(name = "id")

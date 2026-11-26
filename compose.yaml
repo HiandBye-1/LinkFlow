@@ -31,6 +31,7 @@ services:
             SMTP_USERNAME: ${SMTP_USERNAME}
             SMTP_PASSWORD: ${SMTP_PASSWORD}
             DB_HOST: database
+            HMAC_SECRET: ${HMAC_SECRET}
         networks:
             - mynetwork
         container_name: app
